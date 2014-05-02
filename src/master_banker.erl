@@ -8,6 +8,16 @@
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
+-define(HOST, "localhost").
+-define(USERNAME, "makis").
+-define(PASSWORD, "akxs14").
+-define(DATABASE, "makis").
+-define(PORT, 5432).
+
+
+%% ------------------------------------------------------------------
+%% Record definitions
+%% ------------------------------------------------------------------
 
 -record(state, {count}).
 
@@ -54,6 +64,7 @@ get_count() ->
 %% ------------------------------------------------------------------
 
 init([]) ->
+  {ok, C} = load_campaign_budgets(),
   {ok, #state{count=0}}.
 
 handle_call(get_count, _From, #state{count=Count}) ->
@@ -87,3 +98,11 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+load_campaign_budgets() ->
+  {ok, C} = pgsql:connect(?HOST, ?USERNAME, ?PASSWORD,[{database,?DATABASE}, {port,?PORT}]),
+  {ok, Columns, Rows} = pgsql:squery(
+    C,
+    "SELECT id, start_date, end_date, monetary_budget FROM CAMPAIGNS WHERE status=$1",
+    ["active"]),
+  io:format("Rows: ~p~n", Rows),
+  {ok, C}.

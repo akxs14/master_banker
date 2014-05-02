@@ -1,4 +1,4 @@
-%% app generated at {2014,5,2} {1,0,19}
+%% app generated at {2014,5,2} {22,15,43}
 {application,epgsql,
              [{description,"PostgreSQL Client"},
               {vsn,"1.4-5-g3318bd5"},

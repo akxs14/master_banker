@@ -11,9 +11,7 @@ deps:
 	rebar get-deps
 
 release:
-	rebar compile
-	cd rel
-	rebar generate
+	rebar compile && cd rel && rebar generate && cd ..
 
 launch:
 	sh rel/master_banker/bin/master_banker console
