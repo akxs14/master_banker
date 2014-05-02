@@ -14,12 +14,13 @@
 -define(DATABASE, "makis").
 -define(PORT, 5432).
 
+-include_lib("deps/epgsql/include/pgsql.hrl").
 
 %% ------------------------------------------------------------------
 %% Record definitions
 %% ------------------------------------------------------------------
 
--record(state, {count}).
+-record(state, {count, dbconn}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -100,9 +101,19 @@ code_change(_OldVsn, State, _Extra) ->
 
 load_campaign_budgets() ->
   {ok, C} = pgsql:connect(?HOST, ?USERNAME, ?PASSWORD,[{database,?DATABASE}, {port,?PORT}]),
-  {ok, Columns, Rows} = pgsql:squery(
+  {ok, _, Rows} = pgsql:equery(
     C,
-    "SELECT id, start_date, end_date, monetary_budget FROM CAMPAIGNS WHERE status=$1",
+    "select id, start_date, end_date, monetary_budget from campaigns where status = $1",
     ["active"]),
-  io:format("Rows: ~p~n", Rows),
+  [save_campaign_data(Row) || Row <- Rows],
   {ok, C}.
+
+save_campaign_data(Row) ->
+  {Id, Start_date, End_date, Budget} = Row,
+  io:format("Id: ~p, Start: ~p, End: ~p, Budget: ~p\n",
+    [Id, Start_date, End_date, binary_to_float(Budget)]),
+  ok.
+
+
+
+
