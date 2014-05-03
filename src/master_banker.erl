@@ -37,7 +37,11 @@
   start_link/0,
   stop/0,
   say_hello/0,
-  announce_server/0]).
+  %% ulopoihse
+  withdraw_funds/0,
+  withdraw_funds_from_server/0,
+  deposit_funds/0,
+  deposit_funds_to_server/0]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -64,8 +68,20 @@ stop() ->
 say_hello() ->
   gen_server:cast(?SERVER, say_hello).
 
-announce_server() ->
+announce_server(URL) ->
   gen_server:call(?SERVER, announce_server).
+
+withdraw_funds() ->
+  ok.
+
+withdraw_funds_from_server() ->
+  ok.
+
+deposit_funds() ->
+  ok.
+
+deposit_funds_to_server() ->
+  ok.
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
