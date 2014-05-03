@@ -1,4 +1,4 @@
-%% app generated at {2014,5,2} {23,12,27}
+%% app generated at {2014,5,3} {2,51,44}
 {application,erts,
              [{description,[]},
               {vsn,"6.0"},

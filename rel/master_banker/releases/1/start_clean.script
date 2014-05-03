@@ -1,4 +1,4 @@
-%% script generated at {2014,5,2} {23,12,22}
+%% script generated at {2014,5,3} {2,51,40}
 {script,
     {"start_clean",[]},
     [{preLoaded,
@@ -153,7 +153,7 @@
           mod_security_server,mod_trace,tftp,tftp_binary,tftp_engine,
           tftp_file,tftp_lib,tftp_logger,tftp_sup]},
      {path,["$ROOT/lib/master_banker-1/ebin"]},
-     {primLoad,[master_banker,master_banker_app,master_banker_sup]},
+     {primLoad,[date_util,master_banker,master_banker_app,master_banker_sup]},
      {path,["$ROOT/lib/mnesia-4.12/ebin"]},
      {primLoad,
          [mnesia,mnesia_backup,mnesia_bup,mnesia_checkpoint,
@@ -578,7 +578,8 @@
                    {vsn,"1"},
                    {id,[]},
                    {modules,
-                       [master_banker,master_banker_app,master_banker_sup]},
+                       [date_util,master_banker,master_banker_app,
+                        master_banker_sup]},
                    {registered,[]},
                    {applications,
                        [kernel,stdlib,asn1,crypto,epgsql,public_key,ssl]},

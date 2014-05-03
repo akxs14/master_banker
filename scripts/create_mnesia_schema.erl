@@ -7,7 +7,11 @@
 create_database() ->
   mnesia:create_schema([node()]),
   mnesia:start(),
-  mnesia:create_table(campaigns, [{attributes, record_info(fields, campaign)}]),
+  mnesia:create_table(campaigns,[
+    {disc_copies, [node()]},
+    {attributes, record_info(fields, campaign)}
+    ]
+  ),
   mnesia:stop().
 
 

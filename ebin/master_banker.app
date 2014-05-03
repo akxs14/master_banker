@@ -5,4 +5,5 @@
               {applications,[kernel,stdlib,crypto,asn1,public_key,ssl,epgsql]},
               {mod,{master_banker_app,[]}},
               {env,[]},
-              {modules,[master_banker,master_banker_app,master_banker_sup]}]}.
+              {modules,[date_util,master_banker,master_banker_app,
+                        master_banker_sup]}]}.

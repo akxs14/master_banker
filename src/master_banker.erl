@@ -14,7 +14,14 @@
 -define(DATABASE, "makis").
 -define(PORT, 5432).
 
+%% ------------------------------------------------------------------
+%% Required header files and external record definitions
+%% ------------------------------------------------------------------
+
 -include_lib("deps/epgsql/include/pgsql.hrl").
+-include_lib("stdlib/include/qlc.hrl").
+-include_lib("../include/campaign.hrl").
+-include_lib("../include/campaign_daily_budget.hrl").
 
 %% ------------------------------------------------------------------
 %% Record definitions
@@ -65,7 +72,9 @@ get_count() ->
 %% ------------------------------------------------------------------
 
 init([]) ->
-  {ok, C} = load_campaign_budgets(),
+  create_schema(),
+  load_campaign_budgets(),
+  calculate_campaign_budgets(),
   {ok, #state{count=0}}.
 
 handle_call(get_count, _From, #state{count=Count}) ->
@@ -99,6 +108,18 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+%% creates an in-memory schema in local mnesia
+create_schema() ->
+  mnesia:create_schema([node()]),
+  mnesia:start(),
+  mnesia:create_table(campaign,[
+    {attributes, record_info(fields, campaign)}
+  ]),
+  mnesia:create_table(campaign_daily_budget,[
+    {attributes, record_info(fields, campaign_daily_budget)}
+  ]).
+
+
 load_campaign_budgets() ->
   {ok, C} = pgsql:connect(?HOST, ?USERNAME, ?PASSWORD,[{database,?DATABASE}, {port,?PORT}]),
   {ok, _, Rows} = pgsql:equery(
@@ -108,12 +129,59 @@ load_campaign_budgets() ->
   [save_campaign_data(Row) || Row <- Rows],
   {ok, C}.
 
+
 save_campaign_data(Row) ->
   {Id, Start_date, End_date, Budget} = Row,
-  io:format("Id: ~p, Start: ~p, End: ~p, Budget: ~p\n",
-    [Id, Start_date, End_date, binary_to_float(Budget)]),
-  ok.
+  mnesia:transaction(
+    fun() ->
+      mnesia:write(#campaign{
+                    id = Id,
+                    start_date = Start_date,
+                    end_date = End_date,
+                    budget = binary_to_float(Budget)
+      })
+    end).
 
 
+calculate_campaign_budgets() ->
+  mnesia:transaction(
+    fun() ->
+      qlc:eval( qlc:q(
+        [ calculate_daily_budget(X) || X <- mnesia:table(campaign)]
+      ))
+    end).
 
 
+calculate_daily_budget(Campaign) ->
+  Duration = date_util:day_difference(
+                            Campaign#campaign.end_date,
+                            Campaign#campaign.start_date),
+  DailyBudget = Campaign#campaign.budget / Duration,
+  save_distributed_budget(
+                          Campaign#campaign.id,
+                          Campaign#campaign.start_date,
+                          Campaign#campaign.end_date,
+                          DailyBudget).
+
+
+save_distributed_budget(Id, Start_date, End_date, DailyBudget) ->
+  save_day_budget(Id, Start_date, date_util:subtract(End_date, {days,1}), DailyBudget).
+
+
+save_day_budget(Id, End_date, End_date, Budget) ->
+  insert_daily_budget(Id, End_date, Budget);
+
+save_day_budget(Id, Date, End_date, Budget) ->
+  insert_daily_budget(Id, Date, Budget),
+  save_day_budget(Id, date_util:add(Date,{days,1}), End_date, Budget).
+
+
+insert_daily_budget(Id, Date, Budget) ->
+  mnesia:transaction(
+    fun() ->
+      mnesia:write(#campaign_daily_budget{
+        id = Id,
+        date = Date,
+        budget = binary_to_float(Budget)
+      })
+    end).
