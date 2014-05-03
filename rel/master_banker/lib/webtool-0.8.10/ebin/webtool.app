@@ -1,4 +1,4 @@
-%% app generated at {2014,5,3} {2,51,45}
+%% app generated at {2014,5,3} {3,4,15}
 {application,webtool,
              [{description,"Toolbar lookalike for the web"},
               {vsn,"0.8.10"},

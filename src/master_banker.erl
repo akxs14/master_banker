@@ -27,7 +27,7 @@
 %% Record definitions
 %% ------------------------------------------------------------------
 
--record(state, {count, dbconn}).
+-record(state, {server_count}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -37,7 +37,7 @@
   start_link/0,
   stop/0,
   say_hello/0,
-  get_count/0]).
+  announce_server/0]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -64,8 +64,8 @@ stop() ->
 say_hello() ->
   gen_server:cast(?SERVER, say_hello).
 
-get_count() ->
-  gen_server:call(?SERVER, get_count).
+announce_server() ->
+  gen_server:call(?SERVER, announce_server).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -75,27 +75,21 @@ init([]) ->
   create_schema(),
   load_campaign_budgets(),
   calculate_campaign_budgets(),
-  {ok, #state{count=0}}.
+  {ok, #state{server_count = 0}}.
 
-handle_call(get_count, _From, #state{count=Count}) ->
-  {reply, Count, #state{count=Count+1}}.
-% handle_call(_Request, _From, State) ->
-%   {reply, ok, State}.
+handle_call(announce_server, _From, #state{server_count = Count}) ->
+  {noreply, #state{server_count = Count + 1}}.
 
 handle_cast(stop, State) ->
   {stop, normal, State};
 
 handle_cast(say_hello, State) ->
   io:format("Hello~n"),
-  {noreply, #state{count=State#state.count+1}}.
-% handle_cast(_Msg, State) ->
-%   {noreply, State}.
+  {noreply, State}.
 
 handle_info(Info, State) ->
   error_logger:info_msg("~p~n", [Info]),
   {noreply, State}.
-% handle_info(_Info, State) ->
-%   {noreply, State}.
 
 terminate(_Reason, _State) ->
   error_logger:info_msg("terminating~n"),
@@ -135,10 +129,10 @@ save_campaign_data(Row) ->
   mnesia:transaction(
     fun() ->
       mnesia:write(#campaign{
-                    id = Id,
-                    start_date = Start_date,
-                    end_date = End_date,
-                    budget = binary_to_float(Budget)
+                            id = Id,
+                            start_date = Start_date,
+                            end_date = End_date,
+                            budget = binary_to_float(Budget)
       })
     end).
 
@@ -165,15 +159,29 @@ calculate_daily_budget(Campaign) ->
 
 
 save_distributed_budget(Id, Start_date, End_date, DailyBudget) ->
-  save_day_budget(Id, Start_date, date_util:subtract(End_date, {days,1}), DailyBudget).
+  save_day_budget(
+    Id,
+    Start_date,
+    date_util:subtract(End_date, {days,1}), % subtract the end date for correct duration
+    DailyBudget).
 
 
 save_day_budget(Id, End_date, End_date, Budget) ->
-  insert_daily_budget(Id, End_date, Budget);
+  insert_daily_budget(
+    Id,
+    End_date,
+    Budget);
 
 save_day_budget(Id, Date, End_date, Budget) ->
-  insert_daily_budget(Id, Date, Budget),
-  save_day_budget(Id, date_util:add(Date,{days,1}), End_date, Budget).
+  insert_daily_budget(
+    Id,
+    Date,
+    Budget),
+  save_day_budget(
+    Id,
+    date_util:add(Date,{days,1}),
+    End_date,
+    Budget).
 
 
 insert_daily_budget(Id, Date, Budget) ->
