@@ -1,4 +1,4 @@
 master_banker
 =============
 
-Reto's master banker
+Master banker node
