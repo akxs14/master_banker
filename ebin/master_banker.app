@@ -1,9 +1,0 @@
-{application,master_banker,
-             [{description,[]},
-              {vsn,"1"},
-              {registered,[]},
-              {applications,[kernel,stdlib,crypto,asn1,public_key,ssl,epgsql]},
-              {mod,{master_banker_app,[]}},
-              {env,[]},
-              {modules,[date_util,master_banker,master_banker_app,
-                        master_banker_sup]}]}.

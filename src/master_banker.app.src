@@ -5,14 +5,8 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib,
-                  crypto,
-                  asn1,
-                  public_key,
-                  ssl,
-                  epgsql
+                  stdlib
                  ]},
   {mod, { master_banker_app, []}},
-  {env, []},
-  {modules,[master_banker_app, master_banker_sup, master_banker]}
+  {env, []}
  ]}.
