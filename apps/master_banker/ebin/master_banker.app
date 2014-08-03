@@ -5,4 +5,5 @@
               {applications,[kernel,stdlib]},
               {mod,{master_banker_app,[]}},
               {env,[]},
-              {modules,[master_banker_app,master_banker_sup]}]}.
+              {modules,[master_banker_app,master_banker_sup,
+                        master_banker_worker]}]}.

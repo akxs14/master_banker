@@ -50,10 +50,10 @@ start_link() ->
 stop() ->
   gen_server:cast(?SERVER, stop).
 
-bidder_announce(bidder_id) ->
+bidder_announce(ID) ->
   gen_server:call(?SERVER, {bidder_announce, ID}).
 
-bidder_retire(bidder_retire) ->
+bidder_retire(ID) ->
   gen_server:cast(?SERVER, {bidder_retire, ID}).
 
 hello() ->
@@ -73,14 +73,14 @@ init([]) ->
   % write budget per bidder in mnesia (and set fresh_budget=true)
   {ok, #state{bidders_count=0}}.
 
-handle_call({bidder_announce, ID}, _From, #state{bidders_count=Count}) ->
+handle_call({bidder_announce, _ID}, _From, #state{bidders_count=Count}) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N+1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
   % add new bidder to ets table with bidders
   {reply, ok, #state{bidders_count=Count+1}}.
 
-handle_cast({bidder_retire, ID}, _From, #state{bidders_count=Count}) ->
+handle_cast({bidder_retire, _ID}, _From, #state{bidders_count=Count}) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
@@ -90,6 +90,17 @@ handle_cast({bidder_retire, ID}, _From, #state{bidders_count=Count}) ->
 handle_cast(say_hello, State) ->
   io:format("Hallo!~n"),
   {noreply, State}.
+
+handle_info(Info, State) ->      
+    error_logger:info_msg("~p~n", [Info]), 
+    {noreply, State}.          
+
+terminate(_Reason, _State) ->  
+    error_logger:info_msg("terminating~n"),
+    ok.                        
+
+code_change(_OldVsn, State, _Extra) -> 
+    {ok, State}.               
 
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
