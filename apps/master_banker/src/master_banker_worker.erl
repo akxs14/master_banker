@@ -47,15 +47,14 @@
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-
 stop() ->
   gen_server:cast(?SERVER, stop).
 
 bidder_announce(bidder_id) ->
-  gen_server:call(?SERVER, {bidder_announce, bidder_id}).
+  gen_server:call(?SERVER, {bidder_announce, ID}).
 
 bidder_retire(bidder_retire) ->
-  gen_server:cast(?SERVER, {bidder_retire, bidder_id}).
+  gen_server:cast(?SERVER, {bidder_retire, ID}).
 
 hello() ->
   gen_server:cast(?SERVER, say_hello).
@@ -63,4 +62,39 @@ hello() ->
 %% ---------------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ---------------------------------------------------------------------------
+
+init([]) ->
+  % start mnesia
+  % create mnesia tables if don't exist
+  % read campaign id and budgets from mysql
+  % calculate campaign duration
+  % calculate daily budget per campaign
+  % calculate budget per bidder
+  % write budget per bidder in mnesia (and set fresh_budget=true)
+  {ok, #state{bidders_count=0}}.
+
+handle_call({bidder_announce, ID}, _From, #state{bidders_count=Count}) ->
+  % read the remaining daily budget from all nodes and for all campaigns
+  % calculate the remaining daily budget for N+1 bidders
+  % write budget per bidder in mnesia (and set fresh_budget=true)
+  % add new bidder to ets table with bidders
+  {reply, ok, #state{bidders_count=Count+1}}.
+
+handle_cast({bidder_retire, ID}, _From, #state{bidders_count=Count}) ->
+  % read the remaining daily budget from all nodes and for all campaigns
+  % calculate the remaining daily budget for N-1 bidders
+  % write budget per bidder in mnesia (and set fresh_budget=true)
+  % remove bidder to ets table with bidders
+  {reply, ok, #state{bidders_count=Count-1}}.
+
+handle_cast(say_hello, State) ->
+  io:format("Hallo!~n"),
+  {noreply, State}.
+
+%% ------------------------------------------------------------------
+%% Internal Function Definitions
+%% ------------------------------------------------------------------
+
+
+
 
