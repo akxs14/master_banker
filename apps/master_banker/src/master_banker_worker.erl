@@ -113,23 +113,19 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 
 create_mnesia_schema() ->
-  io:format("hello!~n").
-  % ok = mnesia:create_schema([node()]),
-  % application:start(mnesia),
-  % mnesia:create_table(banker_campaign_budgets, 
-  %   [{attributes, record_info(fields, banker_campaign_budget)},
-  %   {index, [#banker_campaign_budget.campaign_id]},
-  %   {ram_copies, [node()]}]
-  % ),
-  % mnesia:create_table(node_campaign_budget, 
-  %   [{attributes, record_info(fields, node_campaign_budget)},
-  %   {index, [#node_campaign_budget.node_id]},
-  %   {ram_copies, [node()]}]
-  % ).
-  % application:stop(mnesia).
+  ok = mnesia:create_schema([node()]),
+  application:start(mnesia),
+  mnesia:create_table(banker_campaign_budgets, 
+    [{attributes, record_info(fields, banker_campaign_budget)},
+    {index, [#banker_campaign_budget.campaign_id]},
+    {ram_copies, [node()]}]
+  ),
+  mnesia:create_table(node_campaign_budget, 
+    [{attributes, record_info(fields, node_campaign_budget)},
+    {index, [#node_campaign_budget.node_id]},
+    {ram_copies, [node()]}]
+  ).
 
-% start mnesia
-% create mnesia tables if don't exist
 % read campaign id and budgets from mysql
 % calculate campaign duration
 % calculate daily budget per campaign
