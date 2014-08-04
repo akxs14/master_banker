@@ -12,6 +12,11 @@
 
 -record(state, {bidders_count}).
 
+-include_lib("stdlib/include/qlc.hrl").
+
+-include("node_campaign_budget.hrl").
+-include("banker_campaign_budget.hrl").
+
 %%-----------------------------------------------------------------------------
 %% API Function Exports
 %%-----------------------------------------------------------------------------
@@ -35,6 +40,7 @@
   init/1,                      % - initializes our process
   handle_call/3,               % - handles synchronous calls (with response)
   handle_cast/2,               % - handles asynchronous calls  (no response)
+  handle_cast/3,
   handle_info/2,               % - handles out of band messages (sent with !)
   terminate/2,                 % - is called on shut-down
   code_change/3                % - called to handle code changes
@@ -64,7 +70,7 @@ hello() ->
 %% ---------------------------------------------------------------------------
 
 init([]) ->
-  % start mnesia
+  create_mnesia_schema(),
   % create mnesia tables if don't exist
   % read campaign id and budgets from mysql
   % calculate campaign duration
@@ -106,6 +112,28 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+create_mnesia_schema() ->
+  io:format("hello!~n").
+  % ok = mnesia:create_schema([node()]),
+  % application:start(mnesia),
+  % mnesia:create_table(banker_campaign_budgets, 
+  %   [{attributes, record_info(fields, banker_campaign_budget)},
+  %   {index, [#banker_campaign_budget.campaign_id]},
+  %   {ram_copies, [node()]}]
+  % ),
+  % mnesia:create_table(node_campaign_budget, 
+  %   [{attributes, record_info(fields, node_campaign_budget)},
+  %   {index, [#node_campaign_budget.node_id]},
+  %   {ram_copies, [node()]}]
+  % ).
+  % application:stop(mnesia).
 
+% start mnesia
+% create mnesia tables if don't exist
+% read campaign id and budgets from mysql
+% calculate campaign duration
+% calculate daily budget per campaign
+% calculate budget per bidder
+% write budget per bidder in mnesia (and set fresh_budget=true)
 
 
