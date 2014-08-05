@@ -15,4 +15,10 @@ clean-release:
 start:
 	sh rel/master_banker/bin/master_banker
 
+full:
+	rebar compile
+	relx -o rel
+	chmod a+x rel/master_banker/bin/master_banker
+	sh rel/master_banker/bin/master_banker
+
 include erlang.mk
