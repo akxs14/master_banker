@@ -112,19 +112,37 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-create_mnesia_schema() ->
-  ok = mnesia:create_schema([node()]),
-  application:start(mnesia),
+create_campaign_budgets() ->
   mnesia:create_table(banker_campaign_budgets, 
     [{attributes, record_info(fields, banker_campaign_budget)},
     {index, [#banker_campaign_budget.campaign_id]},
     {ram_copies, [node()]}]
-  ),
+  ).
+
+create_node_budgets() ->
   mnesia:create_table(node_campaign_budget, 
     [{attributes, record_info(fields, node_campaign_budget)},
     {index, [#node_campaign_budget.node_id]},
     {ram_copies, [node()]}]
   ).
+
+create_table(Create) ->
+  case catch Create() of
+    {'EXIT',_} ->
+      Create();
+    _ -> 
+      ok
+  end.
+
+create_mnesia_schema() ->
+  CreateCampaignBudgets = fun() ->
+    create_campaign_budgets()
+  end,
+  CreateNodeBudgets = fun() ->
+    create_node_budgets()
+  end,
+  create_table(CreateCampaignBudgets),
+  create_table(CreateNodeBudgets).
 
 % read campaign id and budgets from mysql
 % calculate campaign duration
