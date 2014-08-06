@@ -1,4 +1,6 @@
-PROJECT = bidder
+PROJECT = master_banker
+
+DEPS = emysql
 
 .PHONY: release clean-release
 

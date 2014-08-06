@@ -12,11 +12,6 @@
 
 -record(state, {bidders_count}).
 
--include_lib("stdlib/include/qlc.hrl").
-
--include("node_campaign_budget.hrl").
--include("banker_campaign_budget.hrl").
-
 %%-----------------------------------------------------------------------------
 %% API Function Exports
 %%-----------------------------------------------------------------------------
@@ -70,8 +65,7 @@ hello() ->
 %% ---------------------------------------------------------------------------
 
 init([]) ->
-  create_mnesia_schema(),
-  % create mnesia tables if don't exist
+  mnesia_manager:create_mnesia_schema(),
   % read campaign id and budgets from mysql
   % calculate campaign duration
   % calculate daily budget per campaign
@@ -112,42 +106,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-create_campaign_budgets() ->
-  mnesia:create_table(banker_campaign_budgets, 
-    [{attributes, record_info(fields, banker_campaign_budget)},
-    {index, [#banker_campaign_budget.campaign_id]},
-    {ram_copies, [node()]}]
-  ).
 
-create_node_budgets() ->
-  mnesia:create_table(node_campaign_budget, 
-    [{attributes, record_info(fields, node_campaign_budget)},
-    {index, [#node_campaign_budget.node_id]},
-    {ram_copies, [node()]}]
-  ).
 
-create_table(Create) ->
-  case catch Create() of
-    {'EXIT',_} ->
-      Create();
-    _ -> 
-      ok
-  end.
-
-create_mnesia_schema() ->
-  CreateCampaignBudgets = fun() ->
-    create_campaign_budgets()
-  end,
-  CreateNodeBudgets = fun() ->
-    create_node_budgets()
-  end,
-  create_table(CreateCampaignBudgets),
-  create_table(CreateNodeBudgets).
-
-% read campaign id and budgets from mysql
-% calculate campaign duration
-% calculate daily budget per campaign
-% calculate budget per bidder
-% write budget per bidder in mnesia (and set fresh_budget=true)
 
 
