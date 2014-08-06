@@ -66,6 +66,7 @@ hello() ->
 
 init([]) ->
   mnesia_manager:create_mnesia_schema(),
+  mysql_manager:load_campaign_data(),
   % read campaign id and budgets from mysql
   % calculate campaign duration
   % calculate daily budget per campaign

@@ -1,0 +1,1 @@
+-record(campaign, {id, monetary_budget, action_budget, currency_id}).
