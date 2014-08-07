@@ -6,20 +6,30 @@
 %% API Function Exports
 %%-----------------------------------------------------------------------------
 
--export([load_campaign_data/0]).
+-export([load_campaign_data/3]).
 
 %%-----------------------------------------------------------------------------
 %% API Function Implementations
 %%-----------------------------------------------------------------------------
 
-load_campaign_data() ->
-  emysql:add_pool(hello_pool, [{size,2},
-             {user,"root"},
-             {password,""},
-             {database,"attalon_production"},
-             {encoding,utf8}]).
-  % Result = emysql:execute(hello_pool, 
-  %   <<"SELECT id, monetary_budget, action_budget, currency_id from campaigns">>),
-  % Recs = emysql_util:as_record(
-  %   Result, campaign, record_info(fields, hello_record)).
+load_campaign_data(User, Password, Database) ->
+  connect_to_mysql(User, Password, Database),
+  get_campaign_rows().
 
+%% ------------------------------------------------------------------
+%% Internal Function Definitions
+%% ------------------------------------------------------------------
+
+get_campaign_rows() ->
+  Result = emysql:execute(hello_pool,
+    <<"SELECT id, monetary_budget, action_budget, currency_id, start_date, end_date from campaigns">>),
+  emysql_util:as_record(Result, campaign, record_info(fields, campaign)).
+
+connect_to_mysql(User, Password, Database) ->
+  application:start(emysql),
+  emysql:add_pool(hello_pool, [
+            {size,1},
+            {user, User},
+            {password, Password},
+            {database, Database},
+            {encoding,utf8}]).
