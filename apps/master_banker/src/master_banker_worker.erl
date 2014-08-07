@@ -12,6 +12,9 @@
 
 -record(state, {bidders_count}).
 
+-include("campaign.hrl").
+-include("currency.hrl").
+
 %%-----------------------------------------------------------------------------
 %% API Function Exports
 %%-----------------------------------------------------------------------------
@@ -66,9 +69,9 @@ hello() ->
 
 init([]) ->
   mnesia_manager:create_mnesia_schema(),
-  mysql_manager:load_campaign_data(),
-  % read campaign id and budgets from mysql
-  % calculate campaign duration
+  Records = mysql_manager:load_campaign_data("root", "", "attalon_production"),
+  Campaigns = update_campaigns(Records),
+  load_currencies_in_mnesia("root", "", "attalon_production"),
   % calculate daily budget per campaign
   % calculate budget per bidder
   % write budget per bidder in mnesia (and set fresh_budget=true)
@@ -107,7 +110,27 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+update_campaigns(Campaigns) ->
+  [ 
+    #campaign{
+      id = Campaign#campaign.id, 
+      monetary_budget = Campaign#campaign.monetary_budget,
+      action_budget = Campaign#campaign.action_budget,
+      currency_id = Campaign#campaign.currency_id,
+      start_date = Campaign#campaign.start_date,
+      end_date = Campaign#campaign.end_date,
+      duration = calculate_campaign_duration(Campaign),
+      remaining_overall_budget = Campaign#campaign.remaining_overall_budget,
+      todays_remaining_budget = Campaign#campaign.todays_remaining_budget
+    }  
+    || Campaign <- Campaigns
+  ].
 
+calculate_campaign_duration(Campaign) ->
+  { _, StartDate } =  Campaign#campaign.start_date,
+  { _, EndDate } =  Campaign#campaign.end_date,
+  calendar:date_to_gregorian_days(EndDate) - calendar:date_to_gregorian_days(StartDate).
 
-
-
+load_currencies_in_mnesia(User, Password, Database) ->
+  Currencies = mysql_manager:load_currency_data(User, Password, Database),
+  [ io:format("~p ~p ~p~n", [C#currency.id,C#currency.name, C#currency.symbol]) || C <- Currencies].
