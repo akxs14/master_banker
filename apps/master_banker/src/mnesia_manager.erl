@@ -5,6 +5,7 @@
 
 -include("node_campaign_budget.hrl").
 -include("banker_campaign_budget.hrl").
+-include("currency.hrl").
 
 %%-----------------------------------------------------------------------------
 %% API Function Exports
@@ -24,7 +25,11 @@ create_mnesia_schema() ->
   CreateNodeBudgets = fun() ->
     create_node_budgets()
   end,
-  create_table(CreateNodeBudgets).
+  create_table(CreateNodeBudgets),
+  CreateCurrencies = fun() ->
+    create_node_budgets()
+  end,
+  create_table(CreateCurrencies).
 
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
@@ -52,5 +57,13 @@ create_node_budgets() ->
   mnesia:create_table(node_campaign_budget, 
     [{attributes, record_info(fields, node_campaign_budget)},
     {index, [#node_campaign_budget.node_id]},
+    {ram_copies, [node()]}]
+  ).
+
+create_currencies() ->
+  io:format("create_currencies()~n~n"),
+  mnesia:create_table(currencies,
+    [{attributes, record_info(fields, currency)},
+    {index, [#currency.id]},
     {ram_copies, [node()]}]
   ).
