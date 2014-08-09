@@ -68,10 +68,10 @@ hello() ->
 %% ---------------------------------------------------------------------------
 
 init([]) ->
-  mnesia_manager:create_mnesia_schema(),
-  Records = mysql_manager:load_campaign_data("root", "", "attalon_production"),
-  Campaigns = update_campaigns(Records),
+  mnesia_manager:create_mnesia_schema([node()]),
   load_currencies_in_mnesia("root", "", "attalon_production"),
+  CampaignRecords = mysql_manager:load_campaign_data("root", "", "attalon_production"),
+  Campaigns = update_campaigns(CampaignRecords),
   % calculate daily budget per campaign
   % calculate budget per bidder
   % write budget per bidder in mnesia (and set fresh_budget=true)
@@ -111,20 +111,20 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 
 update_campaigns(Campaigns) ->
-  [ 
-    #campaign{
+  [#campaign{
       id = Campaign#campaign.id, 
       monetary_budget = Campaign#campaign.monetary_budget,
       action_budget = Campaign#campaign.action_budget,
       currency_id = Campaign#campaign.currency_id,
+      currency = mnesia_manager:find_currency_symbol(Campaign),
       start_date = Campaign#campaign.start_date,
       end_date = Campaign#campaign.end_date,
       duration = calculate_campaign_duration(Campaign),
       remaining_overall_budget = Campaign#campaign.remaining_overall_budget,
       todays_remaining_budget = Campaign#campaign.todays_remaining_budget
-    }  
-    || Campaign <- Campaigns
-  ].
+    } || Campaign <- Campaigns].
+
+
 
 calculate_campaign_duration(Campaign) ->
   { _, StartDate } =  Campaign#campaign.start_date,
@@ -133,4 +133,4 @@ calculate_campaign_duration(Campaign) ->
 
 load_currencies_in_mnesia(User, Password, Database) ->
   Currencies = mysql_manager:load_currency_data(User, Password, Database),
-  [ io:format("~p ~p ~p~n", [C#currency.id,C#currency.name, C#currency.symbol]) || C <- Currencies].
+  [mnesia_manager:save_currency(Currency) || Currency <- Currencies].
