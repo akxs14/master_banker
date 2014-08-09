@@ -10,7 +10,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
+    application:start(mnesia),
     master_banker_sup:start_link().
 
 stop(_State) ->
+    application:stop(mnesia),
     ok.
