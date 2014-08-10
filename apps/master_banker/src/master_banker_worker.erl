@@ -14,6 +14,8 @@
 
 -include("campaign.hrl").
 -include("currency.hrl").
+-include("node_campaign_budget.hrl").
+-include("banker_campaign_budget.hrl").
 
 %%-----------------------------------------------------------------------------
 %% API Function Exports
@@ -68,13 +70,11 @@ hello() ->
 %% ---------------------------------------------------------------------------
 
 init([]) ->
-  mnesia_manager:create_mnesia_schema([node()]),
   load_currencies_in_mnesia("root", "", "attalon_production"),
   CampaignRecords = mysql_manager:load_campaign_data("root", "", "attalon_production"),
   Campaigns = update_campaigns(CampaignRecords),
-  % calculate daily budget per campaign
-  % calculate budget per bidder
-  % write budget per bidder in mnesia (and set fresh_budget=true)
+  CampaignBudgets = get_banker_campaign_budget(Campaigns),
+  mnesia_manager:save_campaign_budgets(CampaignBudgets),
   {ok, #state{bidders_count=0}}.
 
 handle_call({bidder_announce, _ID}, _From, #state{bidders_count=Count}) ->
@@ -110,6 +110,29 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
+get_banker_campaign_budget(Campaigns) ->
+  [#banker_campaign_budget{
+      campaign_id = Campaign#campaign.id,
+      remaining_days = get_campaign_remaining_days(Campaign),
+      remaining_budget = calculate_remaining_budget(Campaign),
+      daily_budget = calculate_daily_budget(Campaign)
+    } || Campaign <- Campaigns].
+
+calculate_remaining_budget(Campaign) ->
+  Campaign#campaign.monetary_budget - calculate_daily_budget(Campaign).
+
+calculate_daily_budget(Campaign) ->
+  Duration = Campaign#campaign.duration,
+  if Duration == 0 -> Campaign#campaign.monetary_budget; % Campaigns expiring today
+    Duration < 0 -> 0; % Expired campaigns
+    Duration > 0 -> Campaign#campaign.monetary_budget / Duration % Campaign to start campaign
+  end.
+
+get_campaign_remaining_days(Campaign) ->
+  { { Y, M, D }, {_,_,_}} = calendar:universal_time(),
+  { _, EndDate } =  Campaign#campaign.end_date,
+  calendar:date_to_gregorian_days(EndDate) - calendar:date_to_gregorian_days(Y, M, D).
+
 update_campaigns(Campaigns) ->
   [#campaign{
       id = Campaign#campaign.id, 
@@ -119,9 +142,8 @@ update_campaigns(Campaigns) ->
       currency = mnesia_manager:find_currency_symbol(Campaign),
       start_date = Campaign#campaign.start_date,
       end_date = Campaign#campaign.end_date,
-      duration = calculate_campaign_duration(Campaign),
+      duration = calculate_campaign_duration(Campaign)
     } || Campaign <- Campaigns].
-
 
 calculate_campaign_duration(Campaign) ->
   { _, StartDate } =  Campaign#campaign.start_date,
