@@ -10,9 +10,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    application:start(mnesia),
-    master_banker_sup:start_link().
+  mnesia_manager:init_db(),
+  master_banker_sup:start_link().
 
 stop(_State) ->
-    application:stop(mnesia),
-    ok.
+  application:stop(mnesia),
+  ok.
