@@ -120,10 +120,7 @@ update_campaigns(Campaigns) ->
       start_date = Campaign#campaign.start_date,
       end_date = Campaign#campaign.end_date,
       duration = calculate_campaign_duration(Campaign),
-      remaining_overall_budget = Campaign#campaign.remaining_overall_budget,
-      todays_remaining_budget = Campaign#campaign.todays_remaining_budget
     } || Campaign <- Campaigns].
-
 
 
 calculate_campaign_duration(Campaign) ->
