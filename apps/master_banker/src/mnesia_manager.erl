@@ -26,6 +26,7 @@
 %%-----------------------------------------------------------------------------
 %% API Calls for master_banker_app
 %%-----------------------------------------------------------------------------
+
 init_db() ->
   application:stop(mnesia),
   mnesia:create_schema(Nodes = [node()]),
@@ -37,6 +38,22 @@ init_db() ->
 %%-----------------------------------------------------------------------------
 %% API Calls for master_banker_worker
 %%-----------------------------------------------------------------------------
+
+sum_node_budgets() ->
+  ok.
+
+create_node_campaign_budget(NodeID) ->
+  ok.
+
+remove_node_campaign_budget(NodeID) ->
+  ok.
+
+calculate_node_budgets() ->
+  ok.
+
+write_node_budgets() ->
+  ok.
+
 save_currency(Currency) ->
   mnesia:activity(transaction, fun() ->
     mnesia:write(Currency)
