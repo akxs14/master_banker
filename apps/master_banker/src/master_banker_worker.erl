@@ -40,7 +40,7 @@
   init/1,                      % - initializes our process
   handle_call/3,               % - handles synchronous calls (with response)
   handle_cast/2,               % - handles asynchronous calls  (no response)
-  handle_cast/3,
+  % handle_cast/3,
   handle_info/2,               % - handles out of band messages (sent with !)
   terminate/2,                 % - is called on shut-down
   code_change/3                % - called to handle code changes
@@ -60,7 +60,7 @@ bidder_announce(ID) ->
   gen_server:call(?SERVER, {bidder_announce, ID}).
 
 bidder_retire(ID) ->
-  gen_server:cast(?SERVER, {bidder_retire, ID}).
+  gen_server:call(?SERVER, {bidder_retire, ID}).
 
 hello() ->
   gen_server:cast(?SERVER, say_hello).
@@ -81,13 +81,13 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N+1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }}.
+  {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
-handle_cast({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
+handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  {reply, ok, #state{ bidders_count=Count-1, bidders = Bidders -- [ID] }}.
+  {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 handle_cast(say_hello, State) ->
   io:format("Hallo!~n"),
