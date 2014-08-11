@@ -10,7 +10,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {bidders_count}).
+-record(state, {bidders_count, bidders}).
 
 -include("campaign.hrl").
 -include("currency.hrl").
@@ -75,21 +75,19 @@ init([]) ->
   Campaigns = update_campaigns(CampaignRecords),
   CampaignBudgets = get_banker_campaign_budget(Campaigns),
   mnesia_manager:save_campaign_budgets(CampaignBudgets),
-  {ok, #state{bidders_count=0}}.
+  {ok, #state{bidders_count=0, bidders=[]}}.
 
-handle_call({bidder_announce, _ID}, _From, #state{bidders_count=Count}) ->
+handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N+1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  % add new bidder to ets table with bidders
-  {reply, ok, #state{bidders_count=Count+1}}.
+  {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }}.
 
-handle_cast({bidder_retire, _ID}, _From, #state{bidders_count=Count}) ->
+handle_cast({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  % remove bidder to ets table with bidders
-  {reply, ok, #state{bidders_count=Count-1}}.
+  {reply, ok, #state{ bidders_count=Count-1, bidders = Bidders -- [ID] }}.
 
 handle_cast(say_hello, State) ->
   io:format("Hallo!~n"),
