@@ -5,5 +5,5 @@
               {applications,[kernel,stdlib,emysql]},
               {mod,{master_banker_app,[]}},
               {env,[]},
-              {modules,[master_banker_app,master_banker_sup,
+              {modules,[crone,master_banker_app,master_banker_sup,
                         master_banker_worker,mnesia_manager,mysql_manager]}]}.
