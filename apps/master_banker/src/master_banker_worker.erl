@@ -71,6 +71,11 @@ init([]) ->
   Campaigns = update_campaigns(CampaignRecords),
   CampaignBudgets = get_banker_campaign_budget(Campaigns),
   mnesia_manager:save_campaign_budgets(CampaignBudgets),
+  crone:start([
+  {
+    {daily, {0, 1, am}},
+    {io, fwrite, ["Goodmorning vietnammmm!!!!~n"]}
+  }]),
   {ok, #state{bidders_count=0, bidders=[]}}.
 
 handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
