@@ -62,9 +62,6 @@ bidder_announce(ID) ->
 bidder_retire(ID) ->
   gen_server:call(?SERVER, {bidder_retire, ID}).
 
-hello() ->
-  gen_server:cast(?SERVER, say_hello).
-
 %% ---------------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ---------------------------------------------------------------------------
@@ -88,10 +85,6 @@ handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bid
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
-
-handle_cast(say_hello, State) ->
-  io:format("Hallo!~n"),
-  {noreply, State}.
 
 handle_info(Info, State) ->      
     error_logger:info_msg("~p~n", [Info]), 
