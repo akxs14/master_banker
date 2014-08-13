@@ -26,10 +26,9 @@
   stop/0,                        % - stops it
   bidder_announce/1,             % - used by the bidders to announce themselves 
                                  %   and allocate budget
-  bidder_retire/1,               % - used by the bidders before they die to move
+  bidder_retire/1                % - used by the bidders before they die to move
                                  %   return their remaining budget back 
                                  %   (the budgets are read from mnesia)
-  hello/0
   ]).
 
 %% ---------------------------------------------------------------------------
@@ -39,7 +38,7 @@
 -export([                      % The behaviour callbacks
   init/1,                      % - initializes our process
   handle_call/3,               % - handles synchronous calls (with response)
-  handle_cast/2,               % - handles asynchronous calls  (no response)
+  % handle_cast/2,             % - handles asynchronous calls  (no response)
   % handle_cast/3,
   handle_info/2,               % - handles out of band messages (sent with !)
   terminate/2,                 % - is called on shut-down

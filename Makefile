@@ -1,8 +1,7 @@
 PROJECT = master_banker
 
-DEPS = emysql, erlcon
+DEPS = emysql
 dep_emysql = https://github.com/Eonblast/Emysql.git master
-dep_erlcron = https://github.com/erlware/erlcron.git master
 
 .PHONY: release clean-release
 

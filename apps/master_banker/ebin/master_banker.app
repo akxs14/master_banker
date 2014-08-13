@@ -2,7 +2,7 @@
              [{description,[]},
               {vsn,"1"},
               {registered,[]},
-              {applications,[kernel,stdlib]},
+              {applications,[kernel,stdlib,emysql]},
               {mod,{master_banker_app,[]}},
               {env,[]},
               {modules,[master_banker_app,master_banker_sup,
