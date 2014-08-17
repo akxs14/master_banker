@@ -33,7 +33,7 @@ init([]) ->
   Shutdown = 2000,
   Type = worker,
 
-  Child = {'master_banker_worker  ', {'master_banker_worker', start_link, []},
+  Child = {'master_banker_worker', {'master_banker_worker', start_link, []},
   Restart, Shutdown, Type, ['master_banker_worker']},
 
   {ok, {SupFlags, [Child]}}.
