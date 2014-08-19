@@ -4,6 +4,6 @@ deps
 *.beam
 *.plt
 erl_crash.dump
-rel/bin
-rel/erts-6.1
-rel/lib
+rel/master_banker/bin
+rel/master_banker/erts-6.1
+rel/master_banker/lib
