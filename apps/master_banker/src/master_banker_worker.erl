@@ -82,12 +82,20 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N+1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
+  NodeCampaignBudgets = get_node_campaign_budgets(),
+  CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+  NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, ID, add),
+  write_node_campaign_budgets(NewNodeCampaignBudgets),
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
+  NodeCampaignBudgets = get_node_campaign_budgets(),
+  CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+  NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, ID, remove),
+  write_node_campaign_budgets(NewNodeCampaignBudgets),
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 handle_info(Info, State) ->      
@@ -104,6 +112,26 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+
+aggregate_node_campaign_budgets() ->
+  ok.
+
+aggregate_node_campaign_budgets(NodeCampaignBudgets) ->
+  ok.
+
+calculate_node_campaign_budgets(CampaignBudgets, NodeID, add) ->
+  ok;
+calculate_node_campaign_budgets(CampaignBudgets, NodeID, remove) ->
+  ok.
+
+add_node_budget(NodeID) ->
+  ok.
+
+remove_node_budget(NodeID) ->
+  ok.
+
+write_node_campaign_budgets(NewNodeCampaignBudgets) ->
+  ok.
 
 get_banker_campaign_budget(Campaigns) ->
   [#banker_campaign_budget{
