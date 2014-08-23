@@ -16,7 +16,8 @@
   init_db/0,
   save_currency/1,
   find_currency_symbol/1,
-  save_campaign_budgets/1
+  save_campaign_budgets/1,
+  get_node_campaign_budgets/0
   ]).
 
 %%-----------------------------------------------------------------------------
@@ -53,6 +54,11 @@ calculate_node_budgets() ->
 
 write_node_budgets() ->
   ok.
+
+get_node_campaign_budgets() ->
+  mnesia:activity(transaction, fun() ->
+    mnesia:read(node_campaign_budget)
+  end).
 
 save_currency(Currency) ->
   mnesia:activity(transaction, fun() ->
