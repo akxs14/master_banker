@@ -201,7 +201,7 @@ write_node_campaign_budgets(NewNodeCampaignBudgets) ->
 %% Function: get_banker_campaign_budget/1
 %% Purpose: Creates a list of banker_campaign_budget records retrieved
 %%    from MySQL.
-%% Args:   Campaigns: The active campaign records retrieved from MySQL.
+%% Args: Campaigns: The active campaign records retrieved from MySQL.
 %% Returns: A list of #banker_campaign_budget records for all active
 %%    campaigns.
 %%----------------------------------------------------------------------
@@ -219,7 +219,7 @@ get_banker_campaign_budget(Campaigns) ->
 %% Purpose: Calculates the remaining budget for the given campaign after
 %%    the daily budget has been deducted as:
 %%      REMAINING_CAMPAIGN_BUDGET - DAILY_BUDGET = REMAINING_CAMPAIGN_BUDGET
-%% Args:   Campaign: A Campaign record.
+%% Args: Campaign: A Campaign record.
 %% Returns: The remaining campaign budget.
 %%----------------------------------------------------------------------
 calculate_remaining_budget(Campaign) ->
@@ -230,7 +230,7 @@ calculate_remaining_budget(Campaign) ->
 %% Function: calculate_daily_budget/1
 %% Purpose: Calculates the daily budget:
 %%      REMAINING_CAMPAIGN_BUDGET - DAILY_BUDGET = REMAINING_CAMPAIGN_BUDGET
-%% Args:   Campaign: A Campaign record.
+%% Args: Campaign: A Campaign record.
 %% Returns: The remaining campaign budget.
 %%----------------------------------------------------------------------
 calculate_daily_budget(Campaign) ->
@@ -240,11 +240,28 @@ calculate_daily_budget(Campaign) ->
     Duration > 0 -> Campaign#campaign.monetary_budget / Duration % Campaign to start campaign
   end.
 
+
+%%----------------------------------------------------------------------
+%% Function: get_campaign_remaining_days/1
+%% Purpose: Calculates the remaining days until a campaign's end date.
+%%      CAMPAIGN_END_DATE - TODAY
+%% Args: Campaign: A Campaign record from where the end date is read.
+%% Returns: The remaining days until the campaign's end.
+%%----------------------------------------------------------------------
 get_campaign_remaining_days(Campaign) ->
   { { Y, M, D }, {_,_,_}} = calendar:universal_time(),
   { _, EndDate } =  Campaign#campaign.end_date,
   calendar:date_to_gregorian_days(EndDate) - calendar:date_to_gregorian_days(Y, M, D).
 
+
+%%----------------------------------------------------------------------
+%% Function: update_campaigns/1
+%% Purpose: Creates a list of #campaign records retrieved
+%%    from MySQL.
+%% Args: Campaigns: The active campaign records retrieved from MySQL.
+%% Returns: A list of #banker_campaign_budget records for all active
+%%    campaigns with updated data.
+%%----------------------------------------------------------------------
 update_campaigns(Campaigns) ->
   [#campaign{
       id = Campaign#campaign.id, 
@@ -257,11 +274,32 @@ update_campaigns(Campaigns) ->
       duration = calculate_campaign_duration(Campaign)
     } || Campaign <- Campaigns].
 
+
+%%----------------------------------------------------------------------
+%% Function: calculate_campaign_duration/1
+%% Purpose: Calculates the total campaign duration in days.
+%%      CAMPAIGN_END_DATE - CAMPAIGN_START_DATE
+%% Args: Campaign: A Campaign record from where the end and start
+%%      dates is read.
+%% Returns: The remaining days until the campaign's end.
+%%----------------------------------------------------------------------
 calculate_campaign_duration(Campaign) ->
   { _, StartDate } =  Campaign#campaign.start_date,
   { _, EndDate } =  Campaign#campaign.end_date,
   calendar:date_to_gregorian_days(EndDate) - calendar:date_to_gregorian_days(StartDate).
 
+
+%%----------------------------------------------------------------------
+%% Function: load_currencies_in_mnesia/3
+%% Purpose: Loads all currency data from MySQL into mnesia.
+%% Args:
+%%    User: The MySQL username.
+%%    Password: The MySQL user's password.
+%%    Database: The database from where to draw the currencies
+%%      (the default is attalon_production).
+%% Returns: A list of #currency records with all currencies loaded
+%%    from MySQL.
+%%----------------------------------------------------------------------
 load_currencies_in_mnesia(User, Password, Database) ->
   Currencies = mysql_manager:load_currency_data(User, Password, Database),
   [mnesia_manager:save_currency(Currency) || Currency <- Currencies].
