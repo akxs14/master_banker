@@ -74,7 +74,8 @@ init([]) ->
   crone:start([
   {
     {daily, {0, 1, am}},
-    {io, fwrite, ["Goodmorning vietnammmm!!!!~n"]}
+    % {io, fwrite, ["Goodmorning vietnammmm!!!!~n"]}
+    {master_banker_worker, calculate_daily_budget, []}    
   }]),
   {ok, #state{bidders_count=0, bidders=[]}}.
 
@@ -82,14 +83,20 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N+1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  io:format("Hallo!!!! Na mai kai gw (~p)~n",[ID]),
+  NodeCampaignBudgets = get_node_campaign_budgets(),
+  CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+  NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
+  write_node_campaign_budgets(NewNodeCampaignBudgets),
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   % read the remaining daily budget from all nodes and for all campaigns
   % calculate the remaining daily budget for N-1 bidders
   % write budget per bidder in mnesia (and set fresh_budget=true)
-  io:format("Hallo!!!! Bye bye! (~p)~n",[ID]),
+  NodeCampaignBudgets = get_node_campaign_budgets(),
+  CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+  NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders -- [ID]),
+  write_node_campaign_budgets(NewNodeCampaignBudgets),
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 handle_info(Info, State) ->      
@@ -106,6 +113,37 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+
+calculate_daily_budget() ->
+  NodeCampaignBudgets = get_node_campaign_budgets(),
+  CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+  Bidders = get_bidder_list_from_mnesia(),
+  NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets),
+  NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders),
+  write_node_campaign_budgets(NewNodeCampaignBudgets),
+  ok.
+
+get_bidder_list_from_mnesia() ->
+  ok.
+
+get_node_campaign_budgets() ->
+  ok.
+
+calculate_next_day_campaign_budgets(CampaignBudgets) ->
+  % remaining budget from last day + next day's allocated
+  ok.
+
+aggregate_node_campaign_budgets() ->
+  ok.
+
+aggregate_node_campaign_budgets(NodeCampaignBudgets) ->
+  ok.
+
+calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
+  ok.
+
+write_node_campaign_budgets(NewNodeCampaignBudgets) ->
+  ok.
 
 get_banker_campaign_budget(Campaigns) ->
   [#banker_campaign_budget{
