@@ -17,9 +17,9 @@
 -include("node_campaign_budget.hrl").
 -include("banker_campaign_budget.hrl").
 
-%%-----------------------------------------------------------------------------
-%% API Function Exports
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% API Function Exports
+%%% -----------------------------------------------------------------------------
 
 -export([
   start_link/0,                  % - starts and links the process in one step
@@ -31,9 +31,9 @@
                                  %   (the budgets are read from mnesia)
   ]).
 
-%%-----------------------------------------------------------------------------
-%% gen_server Function Exports
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% gen_server Function Exports
+%%% -----------------------------------------------------------------------------
 
 -export([                      % The behaviour callbacks
   init/1,                      % - initializes our process
@@ -45,9 +45,9 @@
   code_change/3                % - called to handle code changes
   ]).
 
-%%-----------------------------------------------------------------------------
-%% API Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% API Function Definitions
+%%% -----------------------------------------------------------------------------
 
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -61,9 +61,9 @@ bidder_announce(ID) ->
 bidder_retire(ID) ->
   gen_server:call(?SERVER, {bidder_retire, ID}).
 
-%%-----------------------------------------------------------------------------
-%% gen_server Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% gen_server Function Definitions
+%%% -----------------------------------------------------------------------------
 
 %%-----------------------------------------------------------------------------
 %% Function: init/0
@@ -167,9 +167,9 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) -> 
   {ok, State}.
 
-%%-----------------------------------------------------------------------------
-%% Internal Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% Internal Function Definitions
+%%% -----------------------------------------------------------------------------
 
 %%-----------------------------------------------------------------------------
 %% Function: calculate_daily_budget/0
@@ -293,6 +293,16 @@ calculate_next_day_campaign_budgets(CampaignBudgets) ->
   NewCampaignBudgets.
 
 
+%%-----------------------------------------------------------------------------
+%% Function: update_campaign_budget/2
+%% Purpose: Creates a new #banker_campaign_budget record with updated budget
+%%    information.
+%% Args:
+%%    CampaignBudget: The #banker_campaign_budget to be updated.
+%%    NewDailyBudget: Which will update the record. It is passed as a parameter
+%%        in order to move its calculation out of the function.
+%% Returns: The updated #banker_campaign_budget.
+%%-----------------------------------------------------------------------------
 update_campaign_budget(CampaignBudget, NewDailyBudget) ->
   #banker_campaign_budget {
     campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
@@ -301,6 +311,7 @@ update_campaign_budget(CampaignBudget, NewDailyBudget) ->
       - allocate_daily_budget(CampaignBudget),
     daily_budget = NewDailyBudget
   }.
+
 
 %%-----------------------------------------------------------------------------
 %% Function: allocate_daily_budget/1
