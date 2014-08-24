@@ -17,7 +17,12 @@
   save_currency/1,
   find_currency_symbol/1,
   save_campaign_budgets/1,
-  get_node_campaign_budgets/0
+  get_campaign_budgets/0,
+  get_node_campaign_budgets/0,
+  get_bidders/0,
+  create_node_campaign_budget/2,
+  save_node_campaign_budgets/1,
+  remove_node_campaign_budget/1
   ]).
 
 %%-----------------------------------------------------------------------------
@@ -40,25 +45,41 @@ init_db() ->
 %% API Calls for master_banker_worker
 %%-----------------------------------------------------------------------------
 
-sum_node_budgets() ->
-  ok.
+create_node_campaign_budget(NodeID, CampaignBudgets) ->
+  [create_node_record(NodeID, CampaignBudget)
+    || CampaignBudget <- CampaignBudgets].
 
-create_node_campaign_budget(NodeID) ->
-  ok.
+create_node_record(NodeID, CampaignBudget) ->
+  NodeCampaignBudget = #node_campaign_budget{
+    campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+    node_id = NodeID
+  },
+  mnesia:activity(transaction, fun() ->
+    mnesia:write(NodeCampaignBudget)
+  end).
 
 remove_node_campaign_budget(NodeID) ->
-  ok.
+  mnesia:activity(transaction, fun() ->
+    mnesia:delete(node_campaign_budget, NodeID)
+  end).
 
-calculate_node_budgets() ->
-  ok.
+save_node_campaign_budgets(BankerCampaignBudgets) ->
+  [save_node_campaign_budget(BankerCampaignBudget) ||
+    BankerCampaignBudget <- BankerCampaignBudgets].
 
-write_node_budgets() ->
-  ok.
+save_node_campaign_budget(BankerCampaignBudget) ->
+  mnesia:activity(transaction, fun() ->
+    mnesia:write(BankerCampaignBudget)
+  end).
+
+get_bidders() ->
+  [Node#node_campaign_budget.node_id || Node <- get_node_campaign_budgets()].
+
+get_campaign_budgets() ->
+  ets:tab2list(banker_campaign_budget).
 
 get_node_campaign_budgets() ->
-  mnesia:activity(transaction, fun() ->
-    mnesia:read(node_campaign_budget)
-  end).
+  ets:tab2list(node_campaign_budget).
 
 save_currency(Currency) ->
   mnesia:activity(transaction, fun() ->
