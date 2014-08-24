@@ -278,17 +278,29 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
 %%-----------------------------------------------------------------------------
 calculate_next_day_campaign_budgets(CampaignBudgets) ->
   case CampaignBudgets of 
+    % new campaigns with no existing entries in mnesia
     [] ->
-      NewCampaignBudgets = [#banker_campaign_budget {
-        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
-        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
-        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
-          - allocate_daily_budget(CampaignBudget),
-        daily_budget = allocate_daily_budget(CampaignBudget)
-      }
+      NewCampaignBudgets = [
+        update_campaign_budget(CampaignBudget, allocate_daily_budget(CampaignBudget))
+      || CampaignBudget <- mnesia_manager:get_campaign_budgets()];
+    % already initialize campaigns with entries in mnesia
+    [_] ->
+      NewCampaignBudgets = [update_campaign_budget(
+        CampaignBudget, allocate_daily_budget(CampaignBudget)
+          + CampaignBudget#banker_campaign_budget.daily_budget)
       || CampaignBudget <- mnesia_manager:get_campaign_budgets()]
   end,
   NewCampaignBudgets.
+
+
+update_campaign_budget(CampaignBudget, NewDailyBudget) ->
+  #banker_campaign_budget {
+    campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+    remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
+    remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
+      - allocate_daily_budget(CampaignBudget),
+    daily_budget = NewDailyBudget
+  }.
 
 %%-----------------------------------------------------------------------------
 %% Function: allocate_daily_budget/1
