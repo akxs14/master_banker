@@ -111,16 +111,12 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
 
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
 
-  mnesia_manager:create_node_campaign_budget(ID, CampaignBudgets),
+  mnesia_manager:create_node_campaign_budget(ID),
 
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
 
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
 
-  io:format("NodeCampaignBudgets: ~p~n",[NodeCampaignBudgets]),
-  io:format("CampaignBudgets: ~p~n",[CampaignBudgets]),
-  io:format("NewNodeCampaignBudgets: ~p~n",[NewNodeCampaignBudgets]),
-  io:format("bidders_count: ~p bidders: ~p~n", [Count, Bidders]),
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 
@@ -152,6 +148,7 @@ handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bid
   mnesia_manager:remove_node_campaign_budget(ID),
 
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
+
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 
@@ -282,10 +279,15 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
 calculate_next_day_campaign_budgets(CampaignBudgets) ->
   case CampaignBudgets of 
     [] ->
-      NewCampaignBudgets = [allocate_daily_budget(CampaignBudget) ||
-        CampaignBudget <- mnesia_manager:get_campaign_budgets()]
+      NewCampaignBudgets = [#banker_campaign_budget {
+        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
+        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
+          - allocate_daily_budget(CampaignBudget),
+        daily_budget = allocate_daily_budget(CampaignBudget)
+      }
+      || CampaignBudget <- mnesia_manager:get_campaign_budgets()]
   end,
-  io:format("NewCampaignBudgets:~p~n",[NewCampaignBudgets]),
   NewCampaignBudgets.
 
 %%-----------------------------------------------------------------------------
