@@ -108,14 +108,15 @@ init([]) ->
 %%-----------------------------------------------------------------------------
 handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
+
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-  mnesia_manager:create_node_campaign_budget(ID, CampaignBudgets),
+
+  mnesia_manager:create_node_campaign_budget(ID),
+
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
+
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-  io:format("NodeCampaignBudgets: ~p~n",[NodeCampaignBudgets]),
-  io:format("CampaignBudgets: ~p~n",[CampaignBudgets]),
-  io:format("NewNodeCampaignBudgets: ~p~n",[NewNodeCampaignBudgets]),
-  io:format("bidders_count: ~p bidders: ~p~n", [Count, Bidders]),
+
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 
@@ -139,25 +140,32 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
 %%-----------------------------------------------------------------------------
 handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
+
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
+
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders -- [ID]),
+
   mnesia_manager:remove_node_campaign_budget(ID),
+
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
+
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
+
+
 
 handle_cast( _From, State) ->
   {ok, _From, State}.
 
 handle_info(Info, State) ->      
-  error_logger:info_msg("~p~n", [Info]), 
-  {noreply, State}.          
+  error_logger:info_msg("~p~n", [Info]),
+  {noreply, State}.
 
 terminate(_Reason, _State) ->  
   error_logger:info_msg("terminating~n"),
-  ok.                        
+  ok.
 
 code_change(_OldVsn, State, _Extra) -> 
-  {ok, State}.               
+  {ok, State}.
 
 %%-----------------------------------------------------------------------------
 %% Internal Function Definitions
@@ -188,7 +196,7 @@ calculate_daily_budget() ->
   NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets),
 
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(
-    NextDayCampaignBudgets, 
+    NextDayCampaignBudgets,
     Bidders),
 
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
@@ -203,7 +211,7 @@ calculate_daily_budget() ->
 %% Returns: The aggregated campaign budgets.
 %%-----------------------------------------------------------------------------
 aggregate_node_campaign_budgets(NodeCampaignBudgets) ->
-  ets:new(campaign_budgets, [ named_table, 
+  ets:new(campaign_budgets, [ named_table,
     {keypos, #banker_campaign_budget.campaign_id}]
   ),
   [aggregate_node_budget(NodeCampaignBudget) ||
@@ -216,7 +224,7 @@ aggregate_node_campaign_budgets(NodeCampaignBudgets) ->
 %%-----------------------------------------------------------------------------
 %% Function: aggregate_node_budget/1
 %% Purpose: Aggregates the node budget for every campaign. It creates
-%%    an entry in the campaign_budgets ETS table if there isn't one 
+%%    an entry in the campaign_budgets ETS table if there isn't one
 %%    for the campaign_id in the parameter or it will update an existing one.
 %% Args: NodeCampaignBudget: A record of #node_campaign_budgets.
 %% Returns: It updates the ets table, doesn't return a meaningful value.
@@ -225,9 +233,9 @@ aggregate_node_budget(NodeCampaignBudget) ->
   CampaignID = NodeCampaignBudget#node_campaign_budget.campaign_id,
   NodeRemainingBudget = NodeCampaignBudget#node_campaign_budget.remaining_budget,
   case ets:lookup(campaign_budgets, CampaignID) of
-    [] -> 
+    [] ->
       ets:insert(campaign_budgets, #banker_campaign_budget{
-        campaign_id = CampaignID, 
+        campaign_id = CampaignID,
         remaining_budget = NodeRemainingBudget
       });
     [Campaign | _] ->
@@ -242,7 +250,7 @@ aggregate_node_budget(NodeCampaignBudget) ->
 %%-----------------------------------------------------------------------------
 %% Function: calculate_node_campaign_budgets/1
 %% Purpose: Aggregates the node budget for every campaign. It creates
-%%    an entry in the campaign_budgets ETS table if there isn't one 
+%%    an entry in the campaign_budgets ETS table if there isn't one
 %%    for the campaign_id in the parameter or it will update an existing one.
 %% Args: NodeCampaignBudget: A record of #node_campaign_budgets.
 %% Returns: It updates the ets table, doesn't return a meaningful value.
@@ -261,31 +269,46 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
 %%    For a new run without any residual budgets:
 %%      REMAINING_CAMPAIGN_BUDGET / REMAINING_CAMPAIGN_DAYS = DAILY_BUDGET
 %%    For runs with remaining budget from last day:
-%%      REMAINING_CAMPAIGN_BUDGET / REMAINING_CAMPAIGN_DAYS = 
+%%      REMAINING_CAMPAIGN_BUDGET / REMAINING_CAMPAIGN_DAYS =
 %%          DAILY_BUDGET + LAST_DAY_REMAINING_BUDGET
-%% Args: 
-%%    CampaignBudgets: The remaining budgets for all running campaigns in 
+%% Args:
+%%    CampaignBudgets: The remaining budgets for all running campaigns in
 %%    the end of the day.
 %% Returns: The budget for the new day for all campaigns.
 %%-----------------------------------------------------------------------------
 calculate_next_day_campaign_budgets(CampaignBudgets) ->
   case CampaignBudgets of 
     [] ->
-      NewCampaignBudgets = [allocate_daily_budget(CampaignBudget) || 
-        CampaignBudget <- mnesia_manager:get_campaign_budgets()]
+      NewCampaignBudgets = [#banker_campaign_budget {
+        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
+        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
+          - allocate_daily_budget(CampaignBudget),
+        daily_budget = allocate_daily_budget(CampaignBudget)
+      }
+      || CampaignBudget <- mnesia_manager:get_campaign_budgets()];
+    [_] ->
+      NewCampaignBudgets = [#banker_campaign_budget {
+        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
+        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
+          - allocate_daily_budget(CampaignBudget),
+        daily_budget = CampaignBudget#banker_campaign_budget.daily_budget
+          + allocate_daily_budget(CampaignBudget)
+      }
+      || CampaignBudget <- mnesia_manager:get_campaign_budgets()]
   end,
-  io:format("NewCampaignBudgets:~p~n",[NewCampaignBudgets]),
   NewCampaignBudgets.
 
 %%-----------------------------------------------------------------------------
 %% Function: allocate_daily_budget/1
 %% Purpose: Calculates the daily budget for a given campaign.
-%% Args: 
+%% Args:
 %%    CampaignBudget: The #banker_campaign_budget record for a single campaign.
 %% Returns: The daily budget for the given campaign.
 %%-----------------------------------------------------------------------------
 allocate_daily_budget(CampaignBudget) ->
-  CampaignBudget#banker_campaign_budget.remaining_budget / 
+  CampaignBudget#banker_campaign_budget.remaining_budget /
     CampaignBudget#banker_campaign_budget.remaining_days.
 
 
