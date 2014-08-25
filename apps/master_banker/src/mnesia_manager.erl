@@ -60,8 +60,7 @@ init_db() ->
 %% Returns: A list with the #node_campaign_budget records for the new node.
 %%-----------------------------------------------------------------------------
 create_node_campaign_budget(NodeID) ->
-  CampaignsBudgets = get_campaign_budgets(),
-  [create_node_record(NodeID, CampaignsBudget) || CampaignsBudget <- CampaignsBudgets].
+  [create_node_record(NodeID, CampaignsBudget) || CampaignsBudget <- get_campaign_budgets()].
 
 
 %%-----------------------------------------------------------------------------
