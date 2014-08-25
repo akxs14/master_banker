@@ -17,9 +17,9 @@
 -include("node_campaign_budget.hrl").
 -include("banker_campaign_budget.hrl").
 
-%%-----------------------------------------------------------------------------
-%% API Function Exports
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% API Function Exports
+%%% -----------------------------------------------------------------------------
 
 -export([
   start_link/0,                  % - starts and links the process in one step
@@ -31,9 +31,9 @@
                                  %   (the budgets are read from mnesia)
   ]).
 
-%%-----------------------------------------------------------------------------
-%% gen_server Function Exports
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% gen_server Function Exports
+%%% -----------------------------------------------------------------------------
 
 -export([                      % The behaviour callbacks
   init/1,                      % - initializes our process
@@ -45,9 +45,9 @@
   code_change/3                % - called to handle code changes
   ]).
 
-%%-----------------------------------------------------------------------------
-%% API Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% API Function Definitions
+%%% -----------------------------------------------------------------------------
 
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -61,9 +61,9 @@ bidder_announce(ID) ->
 bidder_retire(ID) ->
   gen_server:call(?SERVER, {bidder_retire, ID}).
 
-%%-----------------------------------------------------------------------------
-%% gen_server Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% gen_server Function Definitions
+%%% -----------------------------------------------------------------------------
 
 %%-----------------------------------------------------------------------------
 %% Function: init/0
@@ -108,15 +108,10 @@ init([]) ->
 %%-----------------------------------------------------------------------------
 handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   mnesia_manager:create_node_campaign_budget(ID),
-
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
-
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 
@@ -140,15 +135,10 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
 %%-----------------------------------------------------------------------------
 handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders -- [ID]),
-
   mnesia_manager:remove_node_campaign_budget(ID),
-
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 
@@ -167,9 +157,9 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) -> 
   {ok, State}.
 
-%%-----------------------------------------------------------------------------
-%% Internal Function Definitions
-%%-----------------------------------------------------------------------------
+%%% -----------------------------------------------------------------------------
+%%% Internal Function Definitions
+%%% -----------------------------------------------------------------------------
 
 %%-----------------------------------------------------------------------------
 %% Function: calculate_daily_budget/0
@@ -188,19 +178,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%-----------------------------------------------------------------------------
 calculate_daily_budget() ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   Bidders = mnesia_manager:get_bidders(),
-
-  NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets),
-
-  NewNodeCampaignBudgets = calculate_node_campaign_budgets(
-    NextDayCampaignBudgets,
-    Bidders),
-
-  mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-  ok.
+  NextDayCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders),
+  mnesia_manager:save_node_campaign_budgets(NextDayCampaignBudgets).
 
 
 %%-----------------------------------------------------------------------------
@@ -249,18 +230,53 @@ aggregate_node_budget(NodeCampaignBudget) ->
 
 %%-----------------------------------------------------------------------------
 %% Function: calculate_node_campaign_budgets/1
-%% Purpose: Aggregates the node budget for every campaign. It creates
-%%    an entry in the campaign_budgets ETS table if there isn't one
-%%    for the campaign_id in the parameter or it will update an existing one.
-%% Args: NodeCampaignBudget: A record of #node_campaign_budgets.
-%% Returns: It updates the ets table, doesn't return a meaningful value.
+%% Purpose: Calculates the #node_campaign_budgets from scratch for the given
+%%    list of bidders.
+%% Args:
+%%    NodeCampaignBudget: A list of #banker_campaign_budget records.
+%%    Bidders: The list of bidders which will receive budget.
+%% Returns: A list of updated #node_campaign_budget records.
 %%-----------------------------------------------------------------------------
 calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
   case CampaignBudgets of
     [] ->
-      NewCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets)
+      NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets);   
+    [_] ->
+      ets:new(yesterday_campaign_budgets, [named_table, {keypos, #banker_campaign_budget.campaign_id} ] ),
+      save_yesterday_remaining_budgets(CampaignBudgets),
+      % yesterday's remaining + today's fresh budget for every campaign
+      NextDayCampaignBudgets = [ 
+        % retrieve yesterday's budget from yesterday_campaign_budgets
+        get_yesterday_remaining_budget(NextDayBudget#banker_campaign_budget.campaign_id) +
+        NextDayBudget#banker_campaign_budget.remaining_budget
+      || NextDayBudget <- calculate_next_day_campaign_budgets(CampaignBudgets) ],
+      ets:delete(yesterday_campaign_budgets)
   end,
-  NewCampaignBudgets.
+  lists:flatten([ create_node_budget_per_campaign(NextDayCampaignBudget, Bidders) 
+    || NextDayCampaignBudget <- NextDayCampaignBudgets]).
+
+
+create_node_budget_per_campaign(NextDayCampaignBudget, Bidders) ->
+  BudgetPerBidder = NextDayCampaignBudget#banker_campaign_budget.daily_budget / length(Bidders),
+  [ #node_campaign_budget{
+      node_id = Bidder,
+      campaign_id = NextDayCampaignBudget#banker_campaign_budget.campaign_id,
+      remaining_budget = BudgetPerBidder,
+      next_day_budget = BudgetPerBidder
+    } || Bidder <- Bidders ].
+
+get_yesterday_remaining_budget(CampaignID) ->
+  case ets:lookup(yesterday_campaign_budgets, CampaignID) of
+    [] -> 
+      0;
+    [LastDayBudget | _] -> 
+      LastDayBudget#banker_campaign_budget.remaining_budget
+  end.
+
+
+save_yesterday_remaining_budgets(CampaignBudgets) ->
+  [ets:insert(yesterday_campaign_budgets, CampaignBudget) || CampaignBudget <- CampaignBudgets].
+
 
 
 %%-----------------------------------------------------------------------------
@@ -278,27 +294,40 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
 %%-----------------------------------------------------------------------------
 calculate_next_day_campaign_budgets(CampaignBudgets) ->
   case CampaignBudgets of 
+    % new campaigns with no existing entries in mnesia
     [] ->
-      NewCampaignBudgets = [#banker_campaign_budget {
-        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
-        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
-        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
-          - allocate_daily_budget(CampaignBudget),
-        daily_budget = allocate_daily_budget(CampaignBudget)
-      }
+      NewCampaignBudgets = [
+        update_campaign_budget(CampaignBudget, allocate_daily_budget(CampaignBudget))
       || CampaignBudget <- mnesia_manager:get_campaign_budgets()];
+    % already initialize campaigns with entries in mnesia
     [_] ->
-      NewCampaignBudgets = [#banker_campaign_budget {
-        campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
-        remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
-        remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
-          - allocate_daily_budget(CampaignBudget),
-        daily_budget = CampaignBudget#banker_campaign_budget.daily_budget
-          + allocate_daily_budget(CampaignBudget)
-      }
+      NewCampaignBudgets = [update_campaign_budget(
+        CampaignBudget, allocate_daily_budget(CampaignBudget)
+          + CampaignBudget#banker_campaign_budget.daily_budget)
       || CampaignBudget <- mnesia_manager:get_campaign_budgets()]
   end,
   NewCampaignBudgets.
+
+
+%%-----------------------------------------------------------------------------
+%% Function: update_campaign_budget/2
+%% Purpose: Creates a new #banker_campaign_budget record with updated budget
+%%    information.
+%% Args:
+%%    CampaignBudget: The #banker_campaign_budget to be updated.
+%%    NewDailyBudget: Which will update the record. It is passed as a parameter
+%%        in order to move its calculation out of the function.
+%% Returns: The updated #banker_campaign_budget.
+%%-----------------------------------------------------------------------------
+update_campaign_budget(CampaignBudget, NewDailyBudget) ->
+  #banker_campaign_budget {
+    campaign_id = CampaignBudget#banker_campaign_budget.campaign_id,
+    remaining_days = CampaignBudget#banker_campaign_budget.remaining_days,
+    remaining_budget = CampaignBudget#banker_campaign_budget.remaining_budget
+      - allocate_daily_budget(CampaignBudget),
+    daily_budget = NewDailyBudget
+  }.
+
 
 %%-----------------------------------------------------------------------------
 %% Function: allocate_daily_budget/1
