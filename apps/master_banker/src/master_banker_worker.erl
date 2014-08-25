@@ -108,15 +108,10 @@ init([]) ->
 %%-----------------------------------------------------------------------------
 handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   mnesia_manager:create_node_campaign_budget(ID),
-
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
-
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 
@@ -140,15 +135,10 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
 %%-----------------------------------------------------------------------------
 handle_call({bidder_retire, ID}, _From, #state{ bidders_count=Count, bidders=Bidders }) ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders -- [ID]),
-
   mnesia_manager:remove_node_campaign_budget(ID),
-
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-
   {reply, ok, #state{ bidders_count=Count - 1, bidders = Bidders -- [ID] }}.
 
 
@@ -188,19 +178,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%-----------------------------------------------------------------------------
 calculate_daily_budget() ->
   NodeCampaignBudgets = mnesia_manager:get_node_campaign_budgets(),
-
   CampaignBudgets = aggregate_node_campaign_budgets(NodeCampaignBudgets),
-
   Bidders = mnesia_manager:get_bidders(),
-
-  NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets),
-
-  NewNodeCampaignBudgets = calculate_node_campaign_budgets(
-    NextDayCampaignBudgets,
-    Bidders),
-
-  mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-  ok.
+  NextDayCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, Bidders),
+  mnesia_manager:save_node_campaign_budgets(NextDayCampaignBudgets).
 
 
 %%-----------------------------------------------------------------------------
@@ -249,18 +230,80 @@ aggregate_node_budget(NodeCampaignBudget) ->
 
 %%-----------------------------------------------------------------------------
 %% Function: calculate_node_campaign_budgets/1
-%% Purpose: Aggregates the node budget for every campaign. It creates
-%%    an entry in the campaign_budgets ETS table if there isn't one
-%%    for the campaign_id in the parameter or it will update an existing one.
-%% Args: NodeCampaignBudget: A record of #node_campaign_budgets.
-%% Returns: It updates the ets table, doesn't return a meaningful value.
+%% Purpose: Calculates the #node_campaign_budgets from scratch for the given
+%%    list of bidders.
+%% Args:
+%%    NodeCampaignBudget: A list of #banker_campaign_budget records.
+%%    Bidders: The list of bidders which will receive budget.
+%% Returns: A list of updated #node_campaign_budget records.
 %%-----------------------------------------------------------------------------
 calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
   case CampaignBudgets of
     [] ->
-      NewCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets)
+      NextDayCampaignBudgets = calculate_next_day_campaign_budgets(CampaignBudgets);
+    [_] ->
+      ets:new(yesterday_campaign_budgets, [named_table, {keypos, #banker_campaign_budget.campaign_id} ] ),
+      save_yesterday_remaining_budgets(CampaignBudgets),
+      % yesterday's remaining + today's fresh budget for every campaign
+      NextDayCampaignBudgets = [
+        % retrieve yesterday's budget from yesterday_campaign_budgets
+        get_yesterday_remaining_budget(NextDayBudget#banker_campaign_budget.campaign_id) +
+        NextDayBudget#banker_campaign_budget.remaining_budget
+      || NextDayBudget <- calculate_next_day_campaign_budgets(CampaignBudgets) ],
+      ets:delete(yesterday_campaign_budgets)
   end,
-  NewCampaignBudgets.
+  lists:flatten([ create_node_budget_per_campaign(NextDayCampaignBudget, Bidders)
+    || NextDayCampaignBudget <- NextDayCampaignBudgets]).
+
+%%-----------------------------------------------------------------------------
+%% Function: create_node_budget_per_campaign/2
+%% Purpose: Creates all the #node_campaign_budget records for a given campaign.
+%%    The budget is equally distributed between the nodes.
+%% Args:
+%%    NextDayCampaignBudget: A #banker_campaign_budget record containing next
+%%        day's budget.
+%%    Bidders: The list of bidders which will receive budget.
+%% Returns: A list of updated #node_campaign_budget records.
+%%-----------------------------------------------------------------------------
+create_node_budget_per_campaign(NextDayCampaignBudget, Bidders) ->
+  BudgetPerBidder = NextDayCampaignBudget#banker_campaign_budget.daily_budget / length(Bidders),
+  [ #node_campaign_budget{
+      node_id = Bidder,
+      campaign_id = NextDayCampaignBudget#banker_campaign_budget.campaign_id,
+      remaining_budget = BudgetPerBidder,
+      next_day_budget = BudgetPerBidder
+    } || Bidder <- Bidders ].
+
+
+%%-----------------------------------------------------------------------------
+%% Function: get_yesterday_remaining_budget/1
+%% Purpose: Returns last day's campaign budget from the ets table 
+%%    yesterday_campaign_budgets. The record is located by the campaign id.
+%% Args:
+%%    CampaignID: The campaign id which will be the search key.
+%% Returns: The remaining budget for the given campaign.
+%%-----------------------------------------------------------------------------
+get_yesterday_remaining_budget(CampaignID) ->
+  case ets:lookup(yesterday_campaign_budgets, CampaignID) of
+    [] ->
+      0;
+    [LastDayBudget | _] ->
+      LastDayBudget#banker_campaign_budget.remaining_budget
+  end.
+
+
+%%-----------------------------------------------------------------------------
+%% Function: save_yesterday_remaining_budgets/1
+%% Purpose: Creates entries in the yesterday_campaign_budgets ets table for
+%%    all given campaigns.
+%% Args:
+%%    CampaignBudgets: A list of #banker_campaign_budget records for which
+%%        entries will be created.
+%% Returns: A list of ets query results.
+%%-----------------------------------------------------------------------------
+save_yesterday_remaining_budgets(CampaignBudgets) ->
+  [ets:insert(yesterday_campaign_budgets, CampaignBudget) || CampaignBudget <- CampaignBudgets].
+
 
 
 %%-----------------------------------------------------------------------------
