@@ -255,6 +255,7 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
   lists:flatten([ create_node_budget_per_campaign(NextDayCampaignBudget, Bidders)
     || NextDayCampaignBudget <- NextDayCampaignBudgets]).
 
+
 %%-----------------------------------------------------------------------------
 %% Function: create_node_budget_per_campaign/2
 %% Purpose: Creates all the #node_campaign_budget records for a given campaign.
