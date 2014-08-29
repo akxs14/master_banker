@@ -85,10 +85,10 @@ get_campaigns() ->
 %%-----------------------------------------------------------------------------
 connect_to_mysql(Host, User, Password, Database) ->
   application:start(emysql),
-  emysql:add_pool(banker_pool, [
-            {size,1},
-            {host, Host},
-            {user, User},
-            {password, Password},
-            {database, Database},
-            {encoding,utf8}]).
+  emysql:add_pool(banker_pool, [      
+    {size,1},
+    {host, Host},
+    {user, User},
+    {password, Password},
+    {database, Database},
+    {encoding,utf8}]).

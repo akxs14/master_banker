@@ -22,10 +22,10 @@
 %%% API Function Exports
 %%% -----------------------------------------------------------------------------
 
--define(DBUSER, <<"bc90fbb14b922e">>).
--define(DBPASSWORD, <<"ec4774d0">>).
--define(DBHOST, <<"eu-cdbr-azure-west-a.cloudapp.net">>).
--define(DATABASE, <<"cdb_aed9a5130e">>).
+-define(DBUSER, "bc90fbb14b922e").
+-define(DBPASSWORD, "ec4774d0").
+-define(DBHOST, "eu-cdbr-azure-west-a.cloudapp.net").
+-define(DATABASE, "cdb_aed9a5130e").
 
 %%% -----------------------------------------------------------------------------
 %%% API Function Exports
