@@ -17,6 +17,16 @@
 -include("node_campaign_budget.hrl").
 -include("banker_campaign_budget.hrl").
 
+
+%%% -----------------------------------------------------------------------------
+%%% API Function Exports
+%%% -----------------------------------------------------------------------------
+
+-define(DBUSER, <<"bc90fbb14b922e">>).
+-define(DBPASSWORD, <<"ec4774d0">>).
+-define(DBHOST, <<"eu-cdbr-azure-west-a.cloudapp.net">>).
+-define(DATABASE, <<"cdb_aed9a5130e">>).
+
 %%% -----------------------------------------------------------------------------
 %%% API Function Exports
 %%% -----------------------------------------------------------------------------
@@ -75,8 +85,8 @@ bidder_retire(ID) ->
 %%    bidders list, bidders = []
 %%-----------------------------------------------------------------------------
 init([]) ->
-  load_currencies_in_mnesia("root", "", "attalon_production"),
-  CampaignRecords = mysql_manager:load_campaign_data("root", "", "attalon_production"),
+  load_currencies_in_mnesia(?DBHOST, ?DBUSER, ?DBPASSWORD, ?DATABASE),
+  CampaignRecords = mysql_manager:load_campaign_data(?DBHOST, ?DBUSER, ?DBPASSWORD, ?DATABASE),
   Campaigns = update_campaigns(CampaignRecords),
   CampaignBudgets = get_banker_campaign_budget(Campaigns),
   mnesia_manager:save_campaign_budgets(CampaignBudgets),

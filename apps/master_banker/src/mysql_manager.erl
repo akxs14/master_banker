@@ -7,7 +7,7 @@
 %% API Function Exports
 %%-----------------------------------------------------------------------------
 
--export([load_campaign_data/3, load_currency_data/3]).
+-export([load_campaign_data/4, load_currency_data/4]).
 
 %%-----------------------------------------------------------------------------
 %% API Function Implementations
@@ -24,8 +24,8 @@
 %%      The default one is attalon_production.
 %% Returns: A record set with all the running campaigns in the system.
 %%-----------------------------------------------------------------------------
-load_campaign_data(User, Password, Database) ->
-  connect_to_mysql(User, Password, Database),
+load_campaign_data(Host, User, Password, Database) ->
+  connect_to_mysql(Host, User, Password, Database),
   get_campaigns().
 
 
@@ -37,10 +37,10 @@ load_campaign_data(User, Password, Database) ->
 %%    Password: The password to use in the credentials.
 %%    Database: The database to connect in the server.
 %%      The default one is attalon_production.
-%% Returns: A record set with all the currencies entered in the system.
+%% Returns: A record set with all  the currencies entered in the system.
 %%-----------------------------------------------------------------------------
-load_currency_data(User, Password, Database) ->
-  connect_to_mysql(User, Password, Database),
+load_currency_data(Host, User, Password, Database) ->
+  connect_to_mysql(Host, User, Password, Database),
   get_currencies().
 
 
@@ -56,7 +56,7 @@ load_currency_data(User, Password, Database) ->
 %% Returns: A record set with all the currencies entered in the system.
 %%-----------------------------------------------------------------------------
 get_currencies() ->
-  Result = emysql:execute(hello_pool,
+  Result = emysql:execute(banker_pool,
     <<"SELECT id, symbol, rate_to_euro FROM currencies">>),
   emysql_util:as_record(Result, currency, record_info(fields, currency)).
 
@@ -68,7 +68,7 @@ get_currencies() ->
 %% Returns: A record set with all the running campaigns.
 %%-----------------------------------------------------------------------------
 get_campaigns() ->
-  Result = emysql:execute(hello_pool,
+  Result = emysql:execute(banker_pool,
     <<"SELECT id, monetary_budget, action_budget, currency_id, start_date, end_date from campaigns">>),
   emysql_util:as_record(Result, campaign, record_info(fields, campaign)).
 
@@ -83,10 +83,11 @@ get_campaigns() ->
 %%      The default one is attalon_production.
 %% Returns: A tuple with a success or failure code.
 %%-----------------------------------------------------------------------------
-connect_to_mysql(User, Password, Database) ->
+connect_to_mysql(Host, User, Password, Database) ->
   application:start(emysql),
-  emysql:add_pool(hello_pool, [
+  emysql:add_pool(banker_pool, [
             {size,1},
+            {host, Host}
             {user, User},
             {password, Password},
             {database, Database},
