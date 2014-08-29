@@ -482,6 +482,6 @@ calculate_campaign_duration(Campaign) ->
 %% Returns: A list of #currency records with all currencies loaded
 %%    from MySQL.
 %%-----------------------------------------------------------------------------
-load_currencies_in_mnesia(User, Password, Database) ->
-  Currencies = mysql_manager:load_currency_data(User, Password, Database),
+load_currencies_in_mnesia(Host, User, Password, Database) ->
+  Currencies = mysql_manager:load_currency_data(Host, User, Password, Database),
   [mnesia_manager:save_currency(Currency) || Currency <- Currencies].

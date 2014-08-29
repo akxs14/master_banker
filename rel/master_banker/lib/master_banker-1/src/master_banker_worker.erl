@@ -17,6 +17,16 @@
 -include("node_campaign_budget.hrl").
 -include("banker_campaign_budget.hrl").
 
+
+%%% -----------------------------------------------------------------------------
+%%% API Function Exports
+%%% -----------------------------------------------------------------------------
+
+-define(DBUSER, <<"bc90fbb14b922e">>).
+-define(DBPASSWORD, <<"ec4774d0">>).
+-define(DBHOST, <<"eu-cdbr-azure-west-a.cloudapp.net">>).
+-define(DATABASE, <<"cdb_aed9a5130e">>).
+
 %%% -----------------------------------------------------------------------------
 %%% API Function Exports
 %%% -----------------------------------------------------------------------------
@@ -75,8 +85,8 @@ bidder_retire(ID) ->
 %%    bidders list, bidders = []
 %%-----------------------------------------------------------------------------
 init([]) ->
-  load_currencies_in_mnesia("root", "", "attalon_production"),
-  CampaignRecords = mysql_manager:load_campaign_data("root", "", "attalon_production"),
+  load_currencies_in_mnesia(?DBHOST, ?DBUSER, ?DBPASSWORD, ?DATABASE),
+  CampaignRecords = mysql_manager:load_campaign_data(?DBHOST, ?DBUSER, ?DBPASSWORD, ?DATABASE),
   Campaigns = update_campaigns(CampaignRecords),
   CampaignBudgets = get_banker_campaign_budget(Campaigns),
   mnesia_manager:save_campaign_budgets(CampaignBudgets),
@@ -254,6 +264,7 @@ calculate_node_campaign_budgets(CampaignBudgets, Bidders) ->
   end,
   lists:flatten([ create_node_budget_per_campaign(NextDayCampaignBudget, Bidders)
     || NextDayCampaignBudget <- NextDayCampaignBudgets]).
+
 
 %%-----------------------------------------------------------------------------
 %% Function: create_node_budget_per_campaign/2
@@ -471,6 +482,6 @@ calculate_campaign_duration(Campaign) ->
 %% Returns: A list of #currency records with all currencies loaded
 %%    from MySQL.
 %%-----------------------------------------------------------------------------
-load_currencies_in_mnesia(User, Password, Database) ->
-  Currencies = mysql_manager:load_currency_data(User, Password, Database),
+load_currencies_in_mnesia(Host, User, Password, Database) ->
+  Currencies = mysql_manager:load_currency_data(Host, User, Password, Database),
   [mnesia_manager:save_currency(Currency) || Currency <- Currencies].
