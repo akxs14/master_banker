@@ -9,6 +9,11 @@ release:
 	rebar compile
 	relx -o rel
 
+upload:
+	make release
+	tar czvf master_banker.tar.gz rel/master_banker
+	scp master_banker.tar.gz root@master-banker1.attalon.com:/root
+
 clean-release: 
 	rm -rf rel/master_banker
 
