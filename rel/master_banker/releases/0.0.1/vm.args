@@ -1,5 +1,5 @@
 ## Name of the node
--name master_banker@127.0.0.1
+-name master_banker@master-banker1.attalon.com
 
 ## Cookie for distributed erlang
 -setcookie pipabu

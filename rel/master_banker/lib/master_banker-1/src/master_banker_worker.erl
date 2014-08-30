@@ -19,7 +19,7 @@
 
 
 %%% -----------------------------------------------------------------------------
-%%% API Function Exports
+%%% Constant definitions
 %%% -----------------------------------------------------------------------------
 
 -define(DBUSER, "bc90fbb14b922e").
@@ -122,6 +122,9 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
   mnesia_manager:create_node_campaign_budget(ID),
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
+  io:format("NodeCampaignBudgets: ~p~n~n",[NodeCampaignBudgets]),
+  io:format("CampaignBudgets: ~p~n~n",[CampaignBudgets]),
+  io:format("NewNodeCampaignBudgets: ~p~n~n",[NewNodeCampaignBudgets]),
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 
