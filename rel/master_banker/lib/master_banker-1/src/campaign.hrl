@@ -19,5 +19,6 @@
   currency,
   start_date,
   end_date,
-  duration = 0
+  duration = 0,
+  budget_per_action
   }).

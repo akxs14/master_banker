@@ -22,10 +22,10 @@
 %%% Constant definitions
 %%% -----------------------------------------------------------------------------
 
--define(DBUSER, "bc90fbb14b922e").
--define(DBPASSWORD, "ec4774d0").
--define(DBHOST, "eu-cdbr-azure-west-a.cloudapp.net").
--define(DATABASE, "cdb_aed9a5130e").
+-define(DBUSER, "root").
+-define(DBPASSWORD, "akxs14").
+-define(DBHOST, "mysql1.attalon.com").
+-define(DATABASE, "attalon").
 
 %%% -----------------------------------------------------------------------------
 %%% API Function Exports
@@ -122,9 +122,6 @@ handle_call({bidder_announce, ID}, _From, #state{ bidders_count=Count, bidders=B
   mnesia_manager:create_node_campaign_budget(ID),
   NewNodeCampaignBudgets = calculate_node_campaign_budgets(CampaignBudgets, [ID] ++ Bidders),
   mnesia_manager:save_node_campaign_budgets(NewNodeCampaignBudgets),
-  io:format("NodeCampaignBudgets: ~p~n~n",[NodeCampaignBudgets]),
-  io:format("CampaignBudgets: ~p~n~n",[CampaignBudgets]),
-  io:format("NewNodeCampaignBudgets: ~p~n~n",[NewNodeCampaignBudgets]),
   {reply, ok, #state{ bidders_count=Count+1, bidders=[ID] ++ Bidders }};
 
 

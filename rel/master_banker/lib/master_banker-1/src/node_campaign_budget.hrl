@@ -7,8 +7,10 @@
 %%    next_day_budget: The budget for the following day.
 %%-----------------------------------------------------------------------------
 -record(node_campaign_budget, {
-  node_id,
-  campaign_id,
-  remaining_budget,
-  next_day_budget
+  node_id = "",
+  campaign_id = 0,
+  remaining_budget = 0,
+  next_day_budget = 0,
+  budget_per_action = 0,
+  current_slot_budget = 0
   }).
