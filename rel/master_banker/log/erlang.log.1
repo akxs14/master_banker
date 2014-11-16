@@ -1,0 +1,21 @@
+
+=====
+===== LOGGING STARTED Sun Nov 16 02:45:56 CET 2014
+=====
+Exec: /home/angelos/lab/master_banker/rel/master_banker/erts-6.1/bin/erlexec  -boot /home/angelos/lab/master_banker/rel/master_banker/releases/1/master_banker -mode embedded -config /home/angelos/lab/master_banker/rel/master_banker/releases/1/sys.config -args_file /home/angelos/lab/master_banker/rel/master_banker/releases/1/vm.args -- console ''
+Root: /home/angelos/lab/master_banker/rel/master_banker
+Erlang/OTP 17 [erts-6.1] [source] [64-bit] [smp:8:8] [async-threads:10] [hipe] [kernel-poll:false]
+
+
+=INFO REPORT==== 16-Nov-2014::02:46:11 ===
+    application: master_banker
+    exited: {{shutdown,
+                 {failed_to_start_child,master_banker_worker,
+                     {bad_return_value,
+                         {failed_to_recv_packet_header,timeout}}}},
+             {master_banker_app,start,[normal,[]]}}
+    type: permanent
+{"Kernel pid terminated",application_controller,"{application_start_failure,master_banker,{{shutdown,{failed_to_start_child,master_banker_worker,{bad_return_value,{failed_to_recv_packet_header,timeout}}}},{master_banker_app,start,[normal,[]]}}}"}
+
+Crash dump was written to: erl_crash.dump
+Kernel pid terminated (application_controller) ({application_start_failure,master_banker,{{shutdown,{failed_to_start_child,master_banker_worker,{bad_return_value,{failed_to_recv_packet_header,timeou

@@ -1,0 +1,8 @@
+run_erl [23399] Sun Nov 16 02:45:56 2014
+Args before exec of shell:
+run_erl [23399] Sun Nov 16 02:45:56 2014
+argv[0] = sh
+run_erl [23399] Sun Nov 16 02:45:56 2014
+argv[1] = -c
+run_erl [23399] Sun Nov 16 02:45:56 2014
+argv[2] = exec /home/angelos/lab/master_banker/rel/master_banker/bin/master_banker console \'\' 
